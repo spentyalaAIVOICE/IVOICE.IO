@@ -1,0 +1,93 @@
+import os
+import io
+from google.cloud import speech_v1p1beta1 as speech
+from google.cloud import texttospeech
+
+# Set the environment variable for the Google Cloud project ID
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "path/to/your/keyfile.json"
+
+# Initialize the Google Cloud Speech-to-Text client
+client = speech.SpeechClient()
+
+# Initialize the Google Cloud Text-to-Speech client
+tts_client = texttospeech.TextToSpeechClient()
+
+# Define the welcome message
+welcome_message = "Welcome to the credit card complaint service. How can I help you today?"
+
+# Define the confirmation message
+confirmation_message = "I understand that you want to report a lost credit card. To proceed, I need to access your account information. Is that okay?"
+
+# Define the prompt message
+prompt_message = "Please tell me the card type, the last four digits of the card number, and the date of loss."
+
+# Define the confirmation message for the complaint
+complaint_confirmation_message = "I have your account information and the details of the lost credit card. Do you want to proceed with the complaint?"
+
+# Define the success message
+success_message = "I have created a complaint ticket with the number {}. You can use this number to track the progress of your complaint. A customer service representative will contact you within 24 hours."
+
+# Define the end message
+end_message = "Thank you for using our service. Have a great day!"
+
+# Define the voice assistant's voice
+voice = texttospeech.VoiceSelectionParams(
+    language_code="en-US",
+    name="en-US-Wavenet-A",
+    ssml_gender=texttospeech.SsmlVoiceGender.FEMALE
+)
+
+# Define the voice assistant's audio output
+audio_config = texttospeech.AudioConfig(
+    audio_encoding=texttospeech.AudioEncoding.MP3
+)
+
+# Define the voice assistant's response
+response = texttospeech.SynthesisInput(text=welcome_message)
+
+# Synthesize the voice assistant's response
+voice_response = tts_client.synthesize_speech(
+    input=response,
+    voice=voice,
+    audio_config=audio_config
+)
+
+# Play the voice assistant's response
+with io.open("welcome.mp3", "wb") as out:
+    out.write(voice_response.audio_content)
+    os.system("mpg321 welcome.mp3")
+
+# Get the user's speech
+with speech.RecognitionAudio(content=get_audio()) as audio:
+    # Recognize the user's speech
+    response = client.recognize(config=get_config(), audio=audio)
+
+    # Extract the user's request
+    request = response.results[0].alternatives[0].transcript
+
+    # Check if the user wants to report a lost credit card
+    if "lost credit card" in request.lower():
+        # Synthesize the confirmation message
+        response = texttospeech.SynthesisInput(text=confirmation_message)
+        voice_response = tts_client.synthesize_speech(
+            input=response,
+            voice=voice,
+            audio_config=audio_config
+        )
+
+        # Play the voice assistant's response
+        with io.open("confirmation.mp3", "wb") as out:
+            out.write(voice_response.audio_content)
+            os.system("mpg321 confirmation.mp3")
+
+        # Get the user's permission
+        with speech.RecognitionAudio(content=get_audio()) as audio:
+            # Recognize the user's speech
+            response = client.recognize(config=get_config(), audio=audio)
+
+            # Extract the user's response
+            response = response.results[0].alternatives[0].transcript
+
+            # Check if the user grants permission
+            if "yes" in response.lower():
+               
