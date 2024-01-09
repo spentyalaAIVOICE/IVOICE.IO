@@ -1,0 +1,21 @@
+def on_input(assistant):
+    # Get the user's speech
+    audio = assistant.get_last_audio_event()
+    if audio:
+        # Convert the audio to text
+        text = assistant.transcribe(audio)
+        if text:
+            # Check if the user said "Hey Pevin"
+            if text.lower() == "hey pevin":
+                print("User said 'Hey Pevin'!")
+            else:
+                print("User said: " + text)
+
+# Initialize the Assistant
+assistant = Assistant(os.path.join(os.path.dirname(__file__), 'credentials.json'))
+
+# Start the Assistant
+assistant.start()
+
+# Set up the event handler for the "input" event
+assistant.on_input = on_input
